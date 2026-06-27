@@ -8,7 +8,6 @@ import { ReceiverService } from './receiver.service';
 @Controller('posts')
 export class PublicPostsController {
   constructor(private readonly receiverService: ReceiverService) {}
-3
   @Get()
   findAll(@Query() query: QueryPublicPostDto) {
     return this.receiverService.listPosts(query);

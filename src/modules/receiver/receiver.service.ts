@@ -169,6 +169,8 @@ export class ReceiverService {
 
     return posts.map((post) => ({
       ...mapPostToFrontend(post),
+      lat: post.lat,
+      lng: post.lng,
       provider: mapProviderToFrontend(post.provider),
     }));
   }
@@ -184,6 +186,8 @@ export class ReceiverService {
     }
     return {
       ...mapPostToFrontend(post),
+      lat: post.lat,
+      lng: post.lng,
       provider: mapProviderToFrontend(post.provider),
     };
   }

@@ -14,6 +14,7 @@ import {
   RequestStatus,
   UserRole,
   VerificationLevel,
+  VerificationRequestStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
@@ -25,6 +26,7 @@ const daysAgo = (d: number) => new Date(Date.now() - d * 86_400_000);
 
 async function clearAll(): Promise<void> {
   // Xoá theo thứ tự phụ thuộc khoá ngoại.
+  await prisma.verificationRequest.deleteMany();
   await prisma.review.deleteMany();
   await prisma.story.deleteMany();
   await prisma.notification.deleteMany();
@@ -363,6 +365,7 @@ async function main(): Promise<void> {
       imageUrl: 'https://images.unsplash.com/photo-1488459716781-31db52582fe9',
       thanksToProviderId: market.id,
       likes: 24,
+      status: 'PUBLISHED',
     },
   });
 
@@ -373,7 +376,45 @@ async function main(): Promise<void> {
       imageUrl: 'https://images.unsplash.com/photo-1517433367423-c7e5b0f35086',
       thanksToProviderId: lotus.id,
       likes: 13,
+      status: 'PENDING', // chờ admin duyệt
     },
+  });
+
+  // ----------------------------- VERIFICATION REQUESTS -----------------------------
+
+  await prisma.verificationRequest.createMany({
+    data: [
+      {
+        orgName: 'Tiệm bánh Ngọt Ngào',
+        contactName: 'Trần Thị B',
+        email: 'ngotngao@bakery.vn',
+        role: UserRole.PROVIDER,
+        type: 'Tiệm bánh',
+        address: '99 Hai Bà Trưng, Quận 1',
+        documents: 'Giấy phép kinh doanh, ảnh cơ sở',
+        status: VerificationRequestStatus.PENDING,
+      },
+      {
+        orgName: 'Mái ấm Hoa Hồng Nhỏ',
+        contactName: 'Lê Văn C',
+        email: 'hoahongnho@shelter.vn',
+        role: UserRole.RECEIVER,
+        type: 'Mái ấm / Trung tâm nuôi dưỡng',
+        address: '120 Cách Mạng Tháng 8, Quận 3',
+        documents: 'Giấy phép hoạt động, danh sách thành viên',
+        status: VerificationRequestStatus.PENDING,
+      },
+      {
+        orgName: 'Nhà hàng Cơm Niêu',
+        contactName: 'Phạm Thị D',
+        email: 'comnieu@restaurant.vn',
+        role: UserRole.PROVIDER,
+        type: 'Nhà hàng',
+        address: '45 Nguyễn Trãi, Quận 5',
+        documents: 'Giấy phép kinh doanh',
+        status: VerificationRequestStatus.APPROVED,
+      },
+    ],
   });
 
   // ----------------------------- NOTIFICATIONS -----------------------------
