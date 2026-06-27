@@ -1,6 +1,4 @@
-import { FoodCategory } from '@prisma/client';
 import {
-  IsEnum,
   IsNumber,
   IsOptional,
   IsPositive,
@@ -17,8 +15,8 @@ export class UpdateFoodPostDto {
   title?: string;
 
   @IsOptional()
-  @IsEnum(FoodCategory)
-  category?: FoodCategory;
+  @IsString()
+  category?: string;
 
   @IsOptional()
   @IsNumber()
@@ -32,6 +30,10 @@ export class UpdateFoodPostDto {
   @IsOptional()
   @IsString()
   imageUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  image?: string;
 
   @IsOptional()
   @IsString()

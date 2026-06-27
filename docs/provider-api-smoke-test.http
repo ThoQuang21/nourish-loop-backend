@@ -3,10 +3,10 @@
 ### Update the variables below before running.
 
 @baseUrl = http://localhost:3000/api
-@providerId = d8165829-b373-4e57-acba-f6791af742ba
-@receiverRequestId = c45f0d42-623d-447a-a40e-ce42e8f5165c
-@providerPostId = 9e0c4e67-b3ee-459d-992a-d7f11e1360d6
-@transactionId = 403dfe18-65a0-44f3-b148-bb4524223e68
+@providerId = bc5eac38-a1be-4edd-9e14-d246a3d8699b
+@receiverRequestId = 36440d09-6abb-4c5e-81c4-e94f23a7f98b
+@providerPostId = c6857425-64c3-4303-915b-3a167dd0210c
+@transactionId = 31d6f553-d607-411a-b6d5-a7f4e91d5fdb
 @transactionQrCode = NL-QR-VEG-0001
 
 ### 0. Health check

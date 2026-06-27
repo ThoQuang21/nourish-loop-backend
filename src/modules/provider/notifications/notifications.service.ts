@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { mapNotificationToFrontend } from '../provider-contract';
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
 
 @Injectable()
@@ -9,15 +10,17 @@ export class NotificationsService {
   async findAll(userId: string, query: QueryNotificationsDto) {
     await this.ensureProvider(userId);
 
-    return this.prisma.notification.findMany({
+    const notifications = await this.prisma.notification.findMany({
       where: {
         userId,
-        ...(query.unread === undefined ? {} : { read: !query.unread ? undefined : false }),
+        ...(query.unread === undefined ? {} : { read: query.unread ? false : undefined }),
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
+
+    return notifications.map(mapNotificationToFrontend);
   }
 
   async markAsRead(userId: string, notificationId: string) {
@@ -34,14 +37,12 @@ export class NotificationsService {
       throw new NotFoundException(`Notification ${notificationId} not found`);
     }
 
-    return this.prisma.notification.update({
-      where: {
-        id: notificationId,
-      },
-      data: {
-        read: true,
-      },
+    const updated = await this.prisma.notification.update({
+      where: { id: notificationId },
+      data: { read: true },
     });
+
+    return mapNotificationToFrontend(updated);
   }
 
   private async ensureProvider(providerId: string) {
