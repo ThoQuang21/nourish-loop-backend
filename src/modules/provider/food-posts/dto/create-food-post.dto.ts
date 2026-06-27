@@ -9,9 +9,6 @@ import {
   MinLength,
 } from 'class-validator';
 
-/**
- * Payload tạo tin đăng thực phẩm (từ form /provider/create).
- */
 export class CreateFoodPostDto {
   @IsString()
   @MinLength(3)
@@ -44,7 +41,6 @@ export class CreateFoodPostDto {
   @IsString()
   pickupWindow?: string;
 
-  /** Số giờ còn dùng được, dùng để tính expiresAt. */
   @IsOptional()
   @IsNumber()
   @IsPositive()
