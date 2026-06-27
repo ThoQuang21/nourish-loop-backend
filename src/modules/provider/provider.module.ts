@@ -4,6 +4,7 @@ import { ImpactModule } from './impact/impact.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { RequestsModule } from './requests/requests.module';
 import { TransactionsModule } from './transactions/transactions.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 /**
  * Nhóm toàn bộ nghiệp vụ phía Provider.
@@ -15,6 +16,7 @@ import { TransactionsModule } from './transactions/transactions.module';
     TransactionsModule,
     ImpactModule,
     NotificationsModule,
+    UploadsModule,
   ],
 })
 export class ProviderModule {}
