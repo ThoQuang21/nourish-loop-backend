@@ -32,8 +32,10 @@ Server chạy ở `http://localhost:3000`, mọi route có tiền tố `/api`.
 | Method | Endpoint | Mô tả | Cần body |
 |--------|----------|-------|----------|
 | GET | `/api/health` | Kiểm tra server sống | — |
-| POST | `/api/auth/register` | Đăng ký tài khoản mới | ✅ |
-| POST | `/api/auth/login` | Đăng nhập | ✅ |
+| POST | `/api/auth/register` | Đăng ký tài khoản mới (đủ field) | ✅ |
+| POST | `/api/auth/login` | Đăng nhập → trả `sessionToken` | ✅ |
+| GET | `/api/auth/me` | User hiện tại (header `Bearer <token>`) | ✅ |
+| POST | `/api/auth/logout` | Đăng xuất (header `Bearer <token>`) | ✅ |
 | GET | `/api/posts` | Danh sách tin (lọc `search`, `category`, `status`, `minKg`) | — |
 | GET | `/api/posts/:id` | Chi tiết tin | — |
 | POST | `/api/posts` | Tạo tin thực phẩm | ✅ |
@@ -48,13 +50,21 @@ curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"lan@bepanhoasen.vn","password":"123456"}'
 ```
-→ Trả thông tin user + profile, **không có** `passwordHash`.
+→ Trả `{ user, sessionToken, expiresAt }` (user **không có** `passwordHash`).
+
+**Dùng token cho `/me` và đăng xuất:**
+```bash
+TOKEN="<sessionToken lấy từ login>"
+curl http://localhost:3000/api/auth/me      -H "Authorization: Bearer $TOKEN"   # → user
+curl -X POST http://localhost:3000/api/auth/logout -H "Authorization: Bearer $TOKEN"  # → {"success":true}
+# Gọi lại /me với token cũ sau khi logout → 401
+```
 
 **Đăng ký mới** (email phải chưa tồn tại — dùng email seed sẽ trả `409 Conflict`):
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email":"newuser@test.vn","password":"123456","fullName":"Người Mới","role":"RECEIVER","org":"NGO Test"}'
+  -d '{"email":"newuser@test.vn","password":"123456","fullName":"Người Mới","role":"RECEIVER","org":"NGO Test","phone":"0903000000","address":"Quận 7, TP.HCM"}'
 ```
 
 **Danh sách tin đang mở:**

@@ -80,11 +80,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Đăng nhập OK (200/201)', () => pm.expect([200, 201]).to.include(pm.response.code));",
-                  "const u = pm.response.json();",
-                  "pm.test('đúng vai trò RECEIVER', () => pm.expect(u.role).to.eql('RECEIVER'));",
-                  "pm.test('có profile', () => pm.expect(u).to.have.property('profile'));",
-                  "pm.collectionVariables.set('receiverId', u.id);"
+                  "pm.test('Đăng nhập OK', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const body = pm.response.json();",
+                  "pm.test('có sessionToken', () => pm.expect(body).to.have.property('sessionToken'));",
+                  "pm.test('đúng vai trò RECEIVER', () => pm.expect(body.user.role).to.eql('RECEIVER'));",
+                  "pm.collectionVariables.set('token', body.sessionToken);",
+                  "pm.collectionVariables.set('receiverId', body.user.id);"
                 ]
               }
             }
@@ -109,7 +110,9 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Đăng nhập OK', () => pm.expect([200, 201]).to.include(pm.response.code));",
-                  "pm.collectionVariables.set('providerId', pm.response.json().id);"
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('token', body.sessionToken);",
+                  "pm.collectionVariables.set('providerId', body.user.id);"
                 ]
               }
             }
@@ -132,6 +135,48 @@
               "script": {
                 "type": "text/javascript",
                 "exec": ["pm.test('Trả 401 Unauthorized', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /auth/me (cần token)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] },
+            "description": "Lấy user hiện tại từ session token. Chạy SAU một request Login."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('trả đúng user', () => pm.expect(pm.response.json()).to.have.property('email'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] },
+            "description": "Đăng xuất: xoá session. Sau bước này, GET /auth/me với token cũ sẽ trả 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('success = true', () => pm.expect(pm.response.json().success).to.eql(true));"
+                ]
               }
             }
           ]
@@ -267,6 +312,7 @@
     }
   ],
   "variable": [
+    { "key": "token", "value": "" },
     { "key": "userId", "value": "" },
     { "key": "receiverId", "value": "" },
     { "key": "providerId", "value": "" },

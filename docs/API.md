@@ -11,15 +11,19 @@
 
 ## Auth — `/api/auth`
 
+Auth dùng **session token (không JWT)**: login trả `sessionToken`, client gửi lại qua
+header `Authorization: Bearer <sessionToken>` cho `/auth/me` và `/auth/logout`.
+
 | Method | Path | Mô tả | Trạng thái |
 |--------|------|-------|-----------|
-| POST | `/auth/register` | Đăng ký (email, password, fullName, role, org?, phone?, address?) | 🟡 |
-| POST | `/auth/login` | Đăng nhập → `{ accessToken }` | 🟡 |
+| POST | `/auth/register` | Đăng ký (tất cả field bắt buộc) | ✅ |
+| POST | `/auth/login` | Đăng nhập → `{ user, sessionToken, expiresAt }` | ✅ |
+| POST | `/auth/logout` | Đăng xuất (header Bearer) → `{ success: true }` | ✅ |
+| GET  | `/auth/me` | User hiện tại (header Bearer) | ✅ |
 | POST | `/auth/google` | OAuth Google | ⬜ |
-| GET  | `/auth/me` | Thông tin user hiện tại | ⬜ |
 
 ```jsonc
-// POST /api/auth/register
+// POST /api/auth/register  (tất cả field bắt buộc)
 {
   "email": "minhanh@lotussaigon.vn",
   "password": "secret123",
@@ -29,7 +33,14 @@
   "phone": "0901234567",
   "address": "Quận 1, TP.HCM"
 }
-// → 201 { "accessToken": "eyJ..." }
+// → 201: user (không có passwordHash)
+
+// POST /api/auth/login
+{ "email": "minhanh@lotussaigon.vn", "password": "secret123" }
+// → 200: { "user": { ...user, profile }, "sessionToken": "c8af...", "expiresAt": "2026-07-04T..." }
+
+// GET /api/auth/me        Header: Authorization: Bearer <sessionToken>   → 200: user | 401
+// POST /api/auth/logout   Header: Authorization: Bearer <sessionToken>   → 200: { "success": true }
 ```
 
 ---
