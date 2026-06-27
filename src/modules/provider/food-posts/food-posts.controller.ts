@@ -5,7 +5,7 @@ import { QueryFoodPostDto } from './dto/query-food-post.dto';
 import { UpdateFoodPostDto } from './dto/update-food-post.dto';
 import { FoodPostsService } from './food-posts.service';
 
-@Controller('posts')
+@Controller('provider/posts')
 export class FoodPostsController {
   constructor(private readonly foodPostsService: FoodPostsService) {}
 

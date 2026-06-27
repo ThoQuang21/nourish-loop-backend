@@ -3,7 +3,7 @@ import { CurrentUserId } from '../../../common/decorators/current-user-id.decora
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
 import { NotificationsService } from './notifications.service';
 
-@Controller('notifications')
+@Controller('provider/notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 

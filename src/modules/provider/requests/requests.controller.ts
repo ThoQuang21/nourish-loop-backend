@@ -4,7 +4,7 @@ import { QueryIncomingRequestsDto } from './dto/query-incoming-requests.dto';
 import { UpdateRequestStatusDto } from './dto/update-request-status.dto';
 import { RequestsService } from './requests.service';
 
-@Controller('requests')
+@Controller('provider/requests')
 export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
 

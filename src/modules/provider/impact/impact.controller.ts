@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { CurrentUserId } from '../../../common/decorators/current-user-id.decorator';
 import { ImpactService } from './impact.service';
 
-@Controller('impact')
+@Controller('provider/impact')
 export class ImpactController {
   constructor(private readonly impactService: ImpactService) {}
 

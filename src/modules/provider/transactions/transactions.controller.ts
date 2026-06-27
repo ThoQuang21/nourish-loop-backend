@@ -3,7 +3,7 @@ import { CurrentUserId } from '../../../common/decorators/current-user-id.decora
 import { ConfirmTransactionDto } from './dto/confirm-transaction.dto';
 import { TransactionsService } from './transactions.service';
 
-@Controller('transactions')
+@Controller('provider/transactions')
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
