@@ -17,11 +17,8 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // CORS cho frontend nourish-loop.
-  app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') ?? '*',
-    credentials: true,
-  });
+  // CORS: cho phép mọi origin (dev) — FE gọi backend không bị chặn.
+  app.enableCors();
 
   // Render inject PORT; local mặc định 3000.
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
