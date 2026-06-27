@@ -1,0 +1,16 @@
+### Upload provider post image to Supabase Storage
+### Use multipart/form-data in REST Client that supports file uploads.
+
+@baseUrl = http://localhost:3000/api
+@providerId = REPLACE_PROVIDER_USER_ID
+
+POST {{baseUrl}}/provider/uploads/post-image
+x-user-id: {{providerId}}
+Content-Type: multipart/form-data; boundary=----CodexBoundary
+
+------CodexBoundary
+Content-Disposition: form-data; name="image"; filename="sample.jpg"
+Content-Type: image/jpeg
+
+< ./sample.jpg
+------CodexBoundary--
