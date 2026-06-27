@@ -170,6 +170,11 @@ Câu chuyện tác động; `thanksToProviderId` trỏ tới Provider được c
 ### Notification
 Thông báo theo `type` (REQUEST/ACCEPTED/REMINDER/EXPIRING), cờ `read`. Index `(userId, read)`.
 
+### Session
+Phiên đăng nhập (auth không JWT). Mỗi lần login tạo 1 bản ghi `token` ngẫu nhiên (64 hex)
+gắn `userId`, `expiresAt` (mặc định +7 ngày). Đăng xuất = xoá bản ghi theo `token`.
+`token` unique, index `userId`. Chỉ domain auth dùng bảng này.
+
 ## 3. Enums
 - **UserRole**: PROVIDER, RECEIVER, ADMIN
 - **VerificationLevel**: VERIFIED, COMMUNITY

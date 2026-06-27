@@ -80,7 +80,7 @@ Xem DB trực quan: `npx prisma studio`
 | `auth` | 🟡 Stub | Implement bcrypt + JWT + JwtStrategy/Guard |
 | `food-posts` | 🟡 Mẫu | CRUD cơ bản có, cần guard + lọc khoảng cách |
 | `users` / `profiles` | ⬜ Chưa | Hồ sơ, trust score |
-| `requests` | ⬜ Chưa | Gửi/chấp nhận/từ chối yêu cầu |
+| `receiver` | 🟡 Đang làm | CRUD yêu cầu nhận (tạo/xem/huỷ) ✅ tại route `/requests`; tính năng receiver khác ⬜ |
 | `transactions` | ⬜ Chưa | Xác nhận QR, tính CO₂ |
 | `reviews` | ⬜ Chưa | Đánh giá 2 chiều → trust score |
 | `stories` | ⬜ Chưa | Feed câu chuyện tác động |

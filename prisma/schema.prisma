@@ -91,8 +91,22 @@ model User {
   stories          Story[]        @relation("StoryAuthor")
   storiesThanked   Story[]        @relation("StoryThanksTo")
   notifications    Notification[]
+  sessions         Session[]
 
   @@index([role])
+}
+
+/// Phiên đăng nhập (auth không JWT): mỗi lần login tạo 1 token ngẫu nhiên lưu ở đây;
+/// đăng xuất = xoá bản ghi -> token vô hiệu. Chỉ thuộc domain auth.
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([userId])
 }
 
 /// Hồ sơ mở rộng (1-1 với User). Chứa thông tin tổ chức + chỉ số uy tín.

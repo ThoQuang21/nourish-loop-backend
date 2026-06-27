@@ -11,15 +11,19 @@
 
 ## Auth — `/api/auth`
 
+Auth dùng **session token (không JWT)**: login trả `sessionToken`, client gửi lại qua
+header `Authorization: Bearer <sessionToken>` cho `/auth/me` và `/auth/logout`.
+
 | Method | Path | Mô tả | Trạng thái |
 |--------|------|-------|-----------|
-| POST | `/auth/register` | Đăng ký (email, password, fullName, role, org?, phone?, address?) | 🟡 |
-| POST | `/auth/login` | Đăng nhập → `{ accessToken }` | 🟡 |
+| POST | `/auth/register` | Đăng ký (tất cả field bắt buộc) | ✅ |
+| POST | `/auth/login` | Đăng nhập → `{ user, sessionToken, expiresAt }` | ✅ |
+| POST | `/auth/logout` | Đăng xuất (header Bearer) → `{ success: true }` | ✅ |
+| GET  | `/auth/me` | User hiện tại (header Bearer) | ✅ |
 | POST | `/auth/google` | OAuth Google | ⬜ |
-| GET  | `/auth/me` | Thông tin user hiện tại | ⬜ |
 
 ```jsonc
-// POST /api/auth/register
+// POST /api/auth/register  (tất cả field bắt buộc)
 {
   "email": "minhanh@lotussaigon.vn",
   "password": "secret123",
@@ -29,7 +33,14 @@
   "phone": "0901234567",
   "address": "Quận 1, TP.HCM"
 }
-// → 201 { "accessToken": "eyJ..." }
+// → 201: user (không có passwordHash)
+
+// POST /api/auth/login
+{ "email": "minhanh@lotussaigon.vn", "password": "secret123" }
+// → 200: { "user": { ...user, profile }, "sessionToken": "c8af...", "expiresAt": "2026-07-04T..." }
+
+// GET /api/auth/me        Header: Authorization: Bearer <sessionToken>   → 200: user | 401
+// POST /api/auth/logout   Header: Authorization: Bearer <sessionToken>   → 200: { "success": true }
 ```
 
 ---
@@ -60,14 +71,28 @@
 
 ---
 
-## Requests — `/api/requests` ⬜
+## Requests — `/api/requests`
 
-| Method | Path | Mô tả |
-|--------|------|-------|
-| POST | `/requests` | Receiver gửi yêu cầu nhận (`postId`) |
-| GET  | `/requests` | Yêu cầu của tôi (lọc theo status) |
-| GET  | `/requests/incoming` | Yêu cầu đến tin của tôi (Provider) |
-| PATCH | `/requests/:id` | Chấp nhận / từ chối / huỷ (`status`) |
+Phía **receiver** đã làm (định danh tạm qua `receiverId` trong body/query, sẽ chuyển sang token).
+
+| Method | Path | Mô tả | Trạng thái |
+|--------|------|-------|-----------|
+| POST | `/requests` | Receiver đăng ký nhận (`postId`, `receiverId`, `distanceKm?`, `message?`) | ✅ |
+| GET  | `/requests` | Yêu cầu của tôi (lọc `receiverId`, `status`) | ✅ |
+| GET  | `/requests/:id` | Chi tiết yêu cầu (kèm tin + provider) | ✅ |
+| PATCH | `/requests/:id/cancel` | Receiver huỷ (chỉ khi `PENDING`) | ✅ |
+| GET  | `/requests/incoming` | Yêu cầu đến tin của tôi (Provider) | ⬜ |
+| PATCH | `/requests/:id` | Provider chấp nhận / từ chối (`status`) | ⬜ |
+
+```jsonc
+// POST /api/requests
+{ "postId": "uuid...", "receiverId": "uuid...", "distanceKm": 2.5, "message": "Xin nhận cho bữa tối" }
+// → 201: request (status PENDING)
+// Lỗi: 404 tin không tồn tại · 409 tin không OPEN hoặc đã gửi yêu cầu rồi
+
+// GET   /api/requests?receiverId=uuid&status=PENDING        → mảng request (kèm post)
+// GET   /api/requests/:id                                   → request | 404
+// PATCH /api/requests/:id/cancel   → request (CANCELLED) | 400 nếu không PENDING
 
 ---
 
