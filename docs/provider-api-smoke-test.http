@@ -1,0 +1,125 @@
+### Provider Backend Smoke Test
+### Use with VS Code REST Client or JetBrains HTTP Client.
+### Update the variables below before running.
+
+@baseUrl = http://localhost:3000/api
+@providerId = d8165829-b373-4e57-acba-f6791af742ba
+@receiverRequestId = c45f0d42-623d-447a-a40e-ce42e8f5165c
+@providerPostId = 9e0c4e67-b3ee-459d-992a-d7f11e1360d6
+@transactionId = 403dfe18-65a0-44f3-b148-bb4524223e68
+@transactionQrCode = NL-QR-VEG-0001
+
+### 0. Health check
+GET {{baseUrl}}/health
+
+### 1. Provider dashboard summary
+GET {{baseUrl}}/provider/impact/summary
+x-user-id: {{providerId}}
+
+### 2. Provider weekly ESG data
+GET {{baseUrl}}/provider/impact/weekly
+x-user-id: {{providerId}}
+
+### 3. Create a provider post
+POST {{baseUrl}}/provider/posts
+Content-Type: application/json
+x-user-id: {{providerId}}
+
+{
+  "title": "Buffet trua khach san (suat an)",
+  "category": "PREPARED_MEAL",
+  "weightKg": 28,
+  "description": "Dong hop san, bao quan lanh",
+  "imageUrl": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1000&q=70",
+  "address": "12 Le Loi, Quan 1, TP.HCM",
+  "district": "Quan 1",
+  "pickupWindow": "14:30 - 16:00 hom nay",
+  "expiresInHours": 3
+}
+
+### 4. List my provider posts
+GET {{baseUrl}}/provider/posts
+x-user-id: {{providerId}}
+
+### 5. List my provider posts by status
+GET {{baseUrl}}/provider/posts?status=OPEN
+x-user-id: {{providerId}}
+
+### 6. Get one provider post
+GET {{baseUrl}}/provider/posts/{{providerPostId}}
+x-user-id: {{providerId}}
+
+### 7. Update one provider post
+PATCH {{baseUrl}}/provider/posts/{{providerPostId}}
+Content-Type: application/json
+x-user-id: {{providerId}}
+
+{
+  "title": "Buffet trua khach san (cap nhat)",
+  "weightKg": 30,
+  "pickupWindow": "15:00 - 17:00 hom nay",
+  "description": "Cap nhat so luong va khung gio nhan"
+}
+
+### 8. View incoming requests
+GET {{baseUrl}}/provider/requests/incoming
+x-user-id: {{providerId}}
+
+### 9. View incoming requests filtered by status
+GET {{baseUrl}}/provider/requests/incoming?status=PENDING
+x-user-id: {{providerId}}
+
+### 10. Accept one request
+PATCH {{baseUrl}}/provider/requests/{{receiverRequestId}}
+Content-Type: application/json
+x-user-id: {{providerId}}
+
+{
+  "status": "ACCEPTED"
+}
+
+### 11. Reject one request
+PATCH {{baseUrl}}/provider/requests/{{receiverRequestId}}
+Content-Type: application/json
+x-user-id: {{providerId}}
+
+{
+  "status": "REJECTED"
+}
+
+### 12. View notifications
+GET {{baseUrl}}/provider/notifications
+x-user-id: {{providerId}}
+
+### 13. View unread notifications only
+GET {{baseUrl}}/provider/notifications?unread=true
+x-user-id: {{providerId}}
+
+### 14. Mark one notification as read
+PATCH {{baseUrl}}/provider/notifications/REPLACE_NOTIFICATION_ID/read
+x-user-id: {{providerId}}
+
+### 15. Confirm a transaction by QR
+POST {{baseUrl}}/provider/transactions/{{transactionId}}/confirm
+Content-Type: application/json
+x-user-id: {{providerId}}
+
+{
+  "qrCode": "{{transactionQrCode}}"
+}
+
+### 16. Soft-close one post
+DELETE {{baseUrl}}/provider/posts/{{providerPostId}}
+x-user-id: {{providerId}}
+
+### Suggested manual test order
+### 1) Run health
+### 2) Run impact summary to confirm provider id works
+### 3) Create post
+### 4) List posts and copy a post id into @providerPostId
+### 5) Update / get the created post
+### 6) If receiver-side seed data exists, inspect incoming requests
+### 7) Accept one request and capture transaction id + qrCode from response
+### 8) Confirm transaction
+### 9) Check notifications and impact summary again
+### 10) Soft-close a different OPEN post if needed

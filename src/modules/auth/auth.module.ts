@@ -1,22 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
 
+/**
+ * Nhóm toàn bộ nghiệp vụ xác thực (Authentication & Authorization).
+ */
 @Module({
-  imports: [
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN', '7d') },
-      }),
-    }),
-  ],
-  controllers: [AuthController],
-  providers: [AuthService],
-  // TODO: thêm JwtStrategy + JwtAuthGuard để bảo vệ các route khác.
+  imports: [],
 })
 export class AuthModule {}
