@@ -31,6 +31,7 @@ async function clearAll(): Promise<void> {
   await prisma.transaction.deleteMany();
   await prisma.request.deleteMany();
   await prisma.foodPost.deleteMany();
+  await prisma.consumerOperatingHour.deleteMany();
   await prisma.profile.deleteMany();
   await prisma.user.deleteMany();
 }
@@ -134,6 +135,28 @@ async function main(): Promise<void> {
           trustScore: 4.8,
           totalKg: 540,
           totalDeals: 41,
+          maxCapacityKg: 120,
+          currentLoadKg: 36,
+          acceptsPreparedMeals: true,
+          acceptsBreadCereal: true,
+          acceptsVegetables: true,
+          acceptsFruits: true,
+          acceptsDairy: false,
+          acceptsDryGoods: true,
+          acceptsOther: false,
+          serviceRadiusKm: 6,
+          autoAcceptMatch: true,
+          matchingEnabled: true,
+          operatingHours: {
+            create: [
+              { weekday: 'MON', openTime: '07:00', closeTime: '19:00' },
+              { weekday: 'TUE', openTime: '07:00', closeTime: '19:00' },
+              { weekday: 'WED', openTime: '07:00', closeTime: '19:00' },
+              { weekday: 'THU', openTime: '07:00', closeTime: '19:00' },
+              { weekday: 'FRI', openTime: '07:00', closeTime: '19:00' },
+              { weekday: 'SAT', openTime: '08:00', closeTime: '17:00' },
+            ],
+          },
         },
       },
     },
@@ -158,6 +181,164 @@ async function main(): Promise<void> {
           trustScore: 4.4,
           totalKg: 180,
           totalDeals: 14,
+          maxCapacityKg: 80,
+          currentLoadKg: 52,
+          acceptsPreparedMeals: true,
+          acceptsBreadCereal: true,
+          acceptsVegetables: true,
+          acceptsFruits: false,
+          acceptsDairy: false,
+          acceptsDryGoods: true,
+          acceptsOther: false,
+          serviceRadiusKm: 8,
+          autoAcceptMatch: false,
+          matchingEnabled: true,
+          operatingHours: {
+            create: [
+              { weekday: 'MON', openTime: '09:00', closeTime: '17:00' },
+              { weekday: 'TUE', openTime: '09:00', closeTime: '17:00' },
+              { weekday: 'WED', openTime: '09:00', closeTime: '17:00' },
+              { weekday: 'THU', openTime: '09:00', closeTime: '17:00' },
+              { weekday: 'FRI', openTime: '09:00', closeTime: '17:00' },
+            ],
+          },
+        },
+      },
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: 'mai@nhachungphuocloc.vn',
+      passwordHash,
+      fullName: 'Thanh Mai',
+      phone: '0902000003',
+      role: UserRole.RECEIVER,
+      avatarUrl: 'https://i.pravatar.cc/150?img=41',
+      profile: {
+        create: {
+          org: 'Nha chung Phuoc Loc',
+          address: '32 Cach Mang Thang 8, Quan 3',
+          district: 'Quan 3',
+          lat: 10.7784,
+          lng: 106.6877,
+          level: VerificationLevel.VERIFIED,
+          trustScore: 4.9,
+          totalKg: 620,
+          totalDeals: 55,
+          maxCapacityKg: 95,
+          currentLoadKg: 25,
+          acceptsPreparedMeals: true,
+          acceptsBreadCereal: true,
+          acceptsVegetables: true,
+          acceptsFruits: true,
+          acceptsDairy: true,
+          acceptsDryGoods: true,
+          acceptsOther: true,
+          serviceRadiusKm: 9,
+          autoAcceptMatch: false,
+          matchingEnabled: true,
+          operatingHours: {
+            create: [
+              { weekday: 'MON', openTime: '08:00', closeTime: '18:00' },
+              { weekday: 'TUE', openTime: '08:00', closeTime: '18:00' },
+              { weekday: 'WED', openTime: '08:00', closeTime: '18:00' },
+              { weekday: 'THU', openTime: '08:00', closeTime: '18:00' },
+              { weekday: 'FRI', openTime: '08:00', closeTime: '18:00' },
+              { weekday: 'SAT', openTime: '08:00', closeTime: '12:00' },
+            ],
+          },
+        },
+      },
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: 'hanh@mamxanh.org',
+      passwordHash,
+      fullName: 'Bao Hanh',
+      phone: '0902000004',
+      role: UserRole.RECEIVER,
+      avatarUrl: 'https://i.pravatar.cc/150?img=47',
+      profile: {
+        create: {
+          org: 'Mam Xanh Community',
+          address: '91 Dien Bien Phu, Binh Thanh',
+          district: 'Binh Thanh',
+          lat: 10.8019,
+          lng: 106.7118,
+          level: VerificationLevel.COMMUNITY,
+          trustScore: 4.6,
+          totalKg: 260,
+          totalDeals: 21,
+          maxCapacityKg: 70,
+          currentLoadKg: 18,
+          acceptsPreparedMeals: true,
+          acceptsBreadCereal: false,
+          acceptsVegetables: true,
+          acceptsFruits: true,
+          acceptsDairy: true,
+          acceptsDryGoods: false,
+          acceptsOther: false,
+          serviceRadiusKm: 12,
+          autoAcceptMatch: false,
+          matchingEnabled: true,
+          operatingHours: {
+            create: [
+              { weekday: 'MON', openTime: '10:00', closeTime: '18:00' },
+              { weekday: 'TUE', openTime: '10:00', closeTime: '18:00' },
+              { weekday: 'WED', openTime: '10:00', closeTime: '18:00' },
+              { weekday: 'THU', openTime: '10:00', closeTime: '18:00' },
+              { weekday: 'FRI', openTime: '10:00', closeTime: '18:00' },
+            ],
+          },
+        },
+      },
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: 'khoi@thucphamcongdong.vn',
+      passwordHash,
+      fullName: 'Minh Khoi',
+      phone: '0902000005',
+      role: UserRole.RECEIVER,
+      avatarUrl: 'https://i.pravatar.cc/150?img=52',
+      profile: {
+        create: {
+          org: 'Kho thuc pham cong dong',
+          address: '12 Nguyen Trai, Quan 5',
+          district: 'Quan 5',
+          lat: 10.7555,
+          lng: 106.6689,
+          level: VerificationLevel.VERIFIED,
+          trustScore: 4.7,
+          totalKg: 410,
+          totalDeals: 32,
+          maxCapacityKg: 160,
+          currentLoadKg: 40,
+          acceptsPreparedMeals: false,
+          acceptsBreadCereal: true,
+          acceptsVegetables: true,
+          acceptsFruits: true,
+          acceptsDairy: true,
+          acceptsDryGoods: true,
+          acceptsOther: true,
+          serviceRadiusKm: 10,
+          autoAcceptMatch: true,
+          matchingEnabled: true,
+          operatingHours: {
+            create: [
+              { weekday: 'MON', openTime: '08:30', closeTime: '17:30' },
+              { weekday: 'TUE', openTime: '08:30', closeTime: '17:30' },
+              { weekday: 'WED', openTime: '08:30', closeTime: '17:30' },
+              { weekday: 'THU', openTime: '08:30', closeTime: '17:30' },
+              { weekday: 'FRI', openTime: '08:30', closeTime: '17:30' },
+              { weekday: 'SAT', openTime: '08:30', closeTime: '15:00' },
+            ],
+          },
         },
       },
     },
@@ -413,6 +594,7 @@ async function main(): Promise<void> {
   const counts = {
     users: await prisma.user.count(),
     profiles: await prisma.profile.count(),
+    consumerOperatingHours: await prisma.consumerOperatingHour.count(),
     foodPosts: await prisma.foodPost.count(),
     requests: await prisma.request.count(),
     transactions: await prisma.transaction.count(),
@@ -423,7 +605,7 @@ async function main(): Promise<void> {
   console.log('✅ Seed hoàn tất:', counts);
   console.log('🔑 Tài khoản demo (mật khẩu: 123456):');
   console.log('   Provider: minhanh@lotussaigon.vn | huong@tiembanhmai.vn | tuan@sieuthixanh.vn');
-  console.log('   Receiver: lan@bepanhoasen.vn | phuc@maiamtinhthuong.vn');
+  console.log('   Receiver: lan@bepanhoasen.vn | phuc@maiamtinhthuong.vn | mai@nhachungphuocloc.vn | hanh@mamxanh.org | khoi@thucphamcongdong.vn');
   console.log('   Admin:    admin@foodlife.vn');
 }
 

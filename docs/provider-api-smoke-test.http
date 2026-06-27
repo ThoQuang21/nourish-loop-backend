@@ -21,6 +21,21 @@ GET {{baseUrl}}/provider/impact/weekly
 x-user-id: {{providerId}}
 
 ### 3. Create a provider post
+### 3a. Preview AI top 5 consumer matches
+POST {{baseUrl}}/provider/matching/preview
+Content-Type: application/json
+x-user-id: {{providerId}}
+
+{
+  "title": "Buffet trua khach san (suat an)",
+  "category": "Bữa ăn nấu sẵn",
+  "weightKg": 28,
+  "description": "Dong hop san, bao quan lanh",
+  "address": "12 Le Loi, Quan 1, TP.HCM",
+  "pickupWindow": "14:30 - 16:00 hom nay"
+}
+
+### 3b. Create a provider post
 POST {{baseUrl}}/provider/posts
 Content-Type: application/json
 x-user-id: {{providerId}}
@@ -116,10 +131,11 @@ x-user-id: {{providerId}}
 ### 1) Run health
 ### 2) Run impact summary to confirm provider id works
 ### 3) Create post
-### 4) List posts and copy a post id into @providerPostId
-### 5) Update / get the created post
-### 6) If receiver-side seed data exists, inspect incoming requests
-### 7) Accept one request and capture transaction id + qrCode from response
-### 8) Confirm transaction
-### 9) Check notifications and impact summary again
-### 10) Soft-close a different OPEN post if needed
+### 4) Preview matching to confirm top 5 consumers are returned
+### 5) List posts and copy a post id into @providerPostId
+### 6) Update / get the created post
+### 7) If receiver-side seed data exists, inspect incoming requests
+### 8) Accept one request and capture transaction id + qrCode from response
+### 9) Confirm transaction
+### 10) Check notifications and impact summary again
+### 11) Soft-close a different OPEN post if needed

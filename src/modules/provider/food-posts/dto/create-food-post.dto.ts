@@ -40,6 +40,14 @@ export class CreateFoodPostDto {
   district?: string;
 
   @IsOptional()
+  @IsNumber()
+  lat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  lng?: number;
+
+  @IsOptional()
   @IsString()
   pickupWindow?: string;
 

@@ -39,7 +39,12 @@ erDiagram
       float trustScore
       float totalKg
       int totalDeals
+      float maxCapacityKg
+      float currentLoadKg
+      float serviceRadiusKm
+      enum storageType
     }
+    Profile ||--o{ ConsumerOperatingHour : "has"
     FoodPost {
       uuid id PK
       uuid providerId FK
@@ -88,6 +93,14 @@ erDiagram
       enum type
       bool read
     }
+    ConsumerOperatingHour {
+      uuid id PK
+      uuid profileId FK
+      enum weekday
+      string openTime
+      string closeTime
+      bool isActive
+    }
 ```
 
 ## 2. Bảng & cột
@@ -119,6 +132,27 @@ Thông tin tổ chức + chỉ số uy tín (gộp các field `Provider` ở moc
 | trustScore | float (0..5) | |
 | totalKg | float | tổng kg đã chia sẻ/nhận |
 | totalDeals | int | |
+| maxCapacityKg | float? | sức chứa tối đa của consumer (kg) |
+| currentLoadKg | float? | tải hiện tại, để suy ra sức chứa còn lại |
+| acceptsPreparedMeals... | boolean | consumer có nhận loại thực phẩm đó không |
+| storageType | StorageType? | AMBIENT / CHILLED / FROZEN / MIXED |
+| serviceRadiusKm | float? | bán kính nhận hàng tối đa |
+| autoAcceptMatch | boolean | sẵn sàng auto-flow ở phase sau |
+| matchingEnabled | boolean | cho phép đưa vào pool matching |
+
+### ConsumerOperatingHour
+Khung giờ hoạt động theo ngày của consumer. Đây là bảng mới, thêm vào theo kiểu additive-only, không phá
+các module cũ đang dùng `Profile`.
+
+| Cột | Kiểu | Ghi chú |
+|-----|------|---------|
+| profileId | uuid FK → Profile | |
+| weekday | Weekday | MON..SUN |
+| openTime | string | ví dụ `08:00` |
+| closeTime | string | ví dụ `17:30` |
+| isActive | boolean | có nhận trong ngày này không |
+
+Unique: `(profileId, weekday)`.
 
 ### FoodPost
 Tin đăng thực phẩm dư.
@@ -182,6 +216,8 @@ gắn `userId`, `expiresAt` (mặc định +7 ngày). Đăng xuất = xoá bản
 - **PostStatus**: OPEN, MATCHED, COMPLETED, EXPIRED
 - **RequestStatus**: PENDING, ACCEPTED, COMPLETED, REJECTED, CANCELLED
 - **NotificationType**: REQUEST, ACCEPTED, REMINDER, EXPIRING
+- **StorageType**: AMBIENT, CHILLED, FROZEN, MIXED
+- **Weekday**: MON, TUE, WED, THU, FRI, SAT, SUN
 
 ## 4. Business rules (cần hiện thực hoá)
 1. **Trust score**: trung bình điểm Review của user, có thể trọng số theo số giao dịch. Cập nhật sau mỗi Review.
@@ -190,8 +226,16 @@ gắn `userId`, `expiresAt` (mặc định +7 ngày). Đăng xuất = xoá bản
 4. **Khoảng cách**: tính Haversine giữa toạ độ Receiver và FoodPost; cân nhắc PostGIS nếu cần lọc theo bán kính ở DB.
 5. **Hoàn tất giao dịch**: chỉ khi `confirmedByProvider && confirmedByReceiver` → set `completedAt`,
    FoodPost→COMPLETED, Request→COMPLETED, cộng dồn totalKg/totalDeals cho cả hai Profile.
+6. **Matching nhẹ cho consumer**:
+   - `distanceScore`: từ `Profile.lat/lng` và `FoodPost.lat/lng`
+   - `ratingScore`: từ `Profile.trustScore`
+   - `capacityScore`: từ `maxCapacityKg - currentLoadKg`
+   - `availabilityScore`: từ `ConsumerOperatingHour`
+   - chỉ xét consumer có `matchingEnabled = true`
 
 ## 5. Ghi chú thiết kế
 - Gộp Provider/Receiver vào **một bảng User + Profile** thay vì hai bảng riêng → đơn giản auth, một user có thể đóng cả hai vai trò sau này.
 - `pickupWindow` để dạng text cho bản nháp; có thể tách thành `pickupStart`/`pickupEnd` (datetime) khi cần sắp xếp/lọc theo giờ.
 - Cân nhắc thêm bảng **Message** (chat Provider↔Receiver) khi làm tính năng "Nhắn cho nhà cung cấp".
+- Các field matching cho consumer được thêm theo kiểu **additive-only** vào `Profile` + bảng `ConsumerOperatingHour`,
+  nên không phá các service/provider module hiện tại.

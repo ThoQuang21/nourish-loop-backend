@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { PostStatus, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { MatchingService } from '../matching/matching.service';
+import { inferDistrictLabel } from '../matching/matching.utils';
 import {
   mapPostToFrontend,
   mapRequestToFrontend,
@@ -19,7 +21,10 @@ import { UpdateFoodPostDto } from './dto/update-food-post.dto';
 
 @Injectable()
 export class FoodPostsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly matchingService: MatchingService,
+  ) {}
 
   async findMine(providerId: string, query: QueryFoodPostDto) {
     await this.ensureProvider(providerId);
@@ -142,22 +147,34 @@ export class FoodPostsService {
         description: dto.description,
         imageUrl: dto.imageUrl ?? dto.image,
         address: dto.address,
-        district: dto.district,
+        district: dto.district ?? inferDistrictLabel(dto.address),
+        lat: dto.lat,
+        lng: dto.lng,
         pickupWindow: dto.pickupWindow,
         expiresAt,
       },
     });
+
+    const notifiedMatches = await this.matchingService.notifyTopMatchesForPost(post.id);
 
     await this.prisma.notification.create({
       data: {
         userId: providerId,
         type: 'REMINDER',
         title: 'Post created',
-        body: `Your post "${post.title}" is now open for requests.`,
+        body: notifiedMatches.length
+          ? `Your post "${post.title}" is now open. AI matched and notified ${notifiedMatches.length} receiver(s).`
+          : `Your post "${post.title}" is now open for requests.`,
       },
     });
 
-    return mapPostToFrontend(post);
+    return {
+      ...mapPostToFrontend(post),
+      matching: {
+        receiversNotified: notifiedMatches.length,
+        topReceivers: notifiedMatches,
+      },
+    };
   }
 
   async update(providerId: string, id: string, dto: UpdateFoodPostDto) {
@@ -194,7 +211,13 @@ export class FoodPostsService {
           ? { imageUrl: dto.imageUrl ?? dto.image }
           : {}),
         ...(dto.address !== undefined ? { address: dto.address } : {}),
-        ...(dto.district !== undefined ? { district: dto.district } : {}),
+        ...(dto.district !== undefined
+          ? { district: dto.district }
+          : dto.address !== undefined
+            ? { district: inferDistrictLabel(dto.address) }
+            : {}),
+        ...(dto.lat !== undefined ? { lat: dto.lat } : {}),
+        ...(dto.lng !== undefined ? { lng: dto.lng } : {}),
         ...(dto.pickupWindow !== undefined ? { pickupWindow: dto.pickupWindow } : {}),
         ...(expiresAt !== undefined ? { expiresAt } : {}),
       },

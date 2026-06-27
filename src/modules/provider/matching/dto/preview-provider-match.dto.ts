@@ -7,37 +7,26 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class UpdateFoodPostDto {
+export class PreviewProviderMatchDto {
   @IsOptional()
   @IsString()
   @MinLength(3)
   @MaxLength(160)
   title?: string;
 
-  @IsOptional()
   @IsString()
-  category?: string;
+  category: string;
 
-  @IsOptional()
   @IsNumber()
   @IsPositive()
-  weightKg?: number;
+  weightKg: number;
 
   @IsOptional()
   @IsString()
   description?: string;
 
-  @IsOptional()
   @IsString()
-  imageUrl?: string;
-
-  @IsOptional()
-  @IsString()
-  image?: string;
-
-  @IsOptional()
-  @IsString()
-  address?: string;
+  address: string;
 
   @IsOptional()
   @IsString()
@@ -54,9 +43,4 @@ export class UpdateFoodPostDto {
   @IsOptional()
   @IsString()
   pickupWindow?: string;
-
-  @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  expiresInHours?: number;
 }

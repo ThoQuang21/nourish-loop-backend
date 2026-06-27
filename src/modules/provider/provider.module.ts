@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { FoodPostsModule } from './food-posts/food-posts.module';
 import { ImpactModule } from './impact/impact.module';
+import { MatchingModule } from './matching/matching.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { RequestsModule } from './requests/requests.module';
 import { TransactionsModule } from './transactions/transactions.module';
@@ -15,6 +16,7 @@ import { UploadsModule } from './uploads/uploads.module';
     RequestsModule,
     TransactionsModule,
     ImpactModule,
+    MatchingModule,
     NotificationsModule,
     UploadsModule,
   ],

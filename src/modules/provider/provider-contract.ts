@@ -6,31 +6,43 @@ import {
   VerificationLevel,
 } from '@prisma/client';
 
+function normalizeText(value?: string | null) {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim();
+}
+
 const categoryLabelToEnum: Record<string, FoodCategory> = {
-  PREPARED_MEAL: 'PREPARED_MEAL',
-  BREAD_CEREAL: 'BREAD_CEREAL',
-  VEGETABLES: 'VEGETABLES',
-  FRUITS: 'FRUITS',
-  DAIRY: 'DAIRY',
-  DRY_GOODS: 'DRY_GOODS',
-  OTHER: 'OTHER',
-  'Bua an nau san': 'PREPARED_MEAL',
-  'Banh mi & ngu coc': 'BREAD_CEREAL',
-  'Rau cu qua': 'VEGETABLES',
-  'Trai cay': 'FRUITS',
-  'Sua & san pham': 'DAIRY',
-  'Luong thuc kho': 'DRY_GOODS',
-  Khac: 'OTHER',
+  prepared_meal: 'PREPARED_MEAL',
+  bread_cereal: 'BREAD_CEREAL',
+  vegetables: 'VEGETABLES',
+  fruits: 'FRUITS',
+  dairy: 'DAIRY',
+  dry_goods: 'DRY_GOODS',
+  other: 'OTHER',
+  'bua an nau san': 'PREPARED_MEAL',
+  'banh mi & ngu coc': 'BREAD_CEREAL',
+  'banh mi va ngu coc': 'BREAD_CEREAL',
+  'rau cu qua': 'VEGETABLES',
+  'trai cay': 'FRUITS',
+  'sua & san pham': 'DAIRY',
+  'sua va san pham': 'DAIRY',
+  'luong thuc kho': 'DRY_GOODS',
+  khac: 'OTHER',
 };
 
 const categoryEnumToLabel: Record<FoodCategory, string> = {
-  PREPARED_MEAL: 'Bua an nau san',
-  BREAD_CEREAL: 'Banh mi & ngu coc',
-  VEGETABLES: 'Rau cu qua',
-  FRUITS: 'Trai cay',
-  DAIRY: 'Sua & san pham',
-  DRY_GOODS: 'Luong thuc kho',
-  OTHER: 'Khac',
+  PREPARED_MEAL: 'Bữa ăn nấu sẵn',
+  BREAD_CEREAL: 'Bánh mì & ngũ cốc',
+  VEGETABLES: 'Rau củ quả',
+  FRUITS: 'Trái cây',
+  DAIRY: 'Sữa & sản phẩm',
+  DRY_GOODS: 'Lương thực khô',
+  OTHER: 'Khác',
 };
 
 const postStatusToFrontend: Record<PostStatus, 'open' | 'matched' | 'completed' | 'expired'> = {
@@ -63,7 +75,15 @@ const notificationTypeToFrontend: Record<
 
 export function normalizeFoodCategory(value?: string | FoodCategory | null) {
   if (!value) return undefined;
-  return categoryLabelToEnum[value] ?? undefined;
+
+  if (typeof value === 'string') {
+    const uppercase = value.toUpperCase() as FoodCategory;
+    if (uppercase in categoryEnumToLabel) {
+      return uppercase;
+    }
+  }
+
+  return categoryLabelToEnum[normalizeText(String(value)).replace(/\s+/g, ' ')] ?? undefined;
 }
 
 export function normalizePostStatus(value?: string | PostStatus | null) {

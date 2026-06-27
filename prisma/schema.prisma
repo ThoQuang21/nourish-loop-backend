@@ -65,6 +65,25 @@ enum NotificationType {
   EXPIRING
 }
 
+/// Loại hình lưu trữ / khả năng tiếp nhận của Receiver
+enum StorageType {
+  AMBIENT
+  CHILLED
+  FROZEN
+  MIXED
+}
+
+/// Ngày hoạt động trong tuần của consumer
+enum Weekday {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
 // ---------------------- MODELS ----------------------
 
 /// Tài khoản người dùng (cả Provider lẫn Receiver dùng chung bảng này).
@@ -123,8 +142,40 @@ model Profile {
   trustScore Float             @default(0) // 0..5
   totalKg    Float             @default(0) // tổng kg đã chia sẻ/nhận
   totalDeals Int               @default(0)
+  // -------- Consumer matching fields (additive only) --------
+  maxCapacityKg Float?
+  currentLoadKg Float?         @default(0)
+  acceptsPreparedMeals Boolean @default(true)
+  acceptsBreadCereal Boolean   @default(true)
+  acceptsVegetables Boolean    @default(true)
+  acceptsFruits Boolean        @default(true)
+  acceptsDairy Boolean         @default(true)
+  acceptsDryGoods Boolean      @default(true)
+  acceptsOther Boolean         @default(true)
+  storageType StorageType?
+  serviceRadiusKm Float?       @default(20)
+  autoAcceptMatch Boolean      @default(false)
+  matchingEnabled Boolean      @default(true)
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
+
+  operatingHours ConsumerOperatingHour[]
+}
+
+/// Khung giờ hoạt động của consumer để matching theo ngày/giờ
+model ConsumerOperatingHour {
+  id        String   @id @default(uuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  weekday   Weekday
+  openTime  String   // "08:00"
+  closeTime String   // "17:30"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([profileId, weekday, isActive])
+  @@unique([profileId, weekday])
 }
 
 /// Tin đăng thực phẩm dư do Provider tạo.
