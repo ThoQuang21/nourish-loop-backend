@@ -275,11 +275,43 @@ model Story {
   text               String
   imageUrl           String?
   thanksToProviderId String? // provider được cảm ơn
-  thanksToProvider   User?    @relation("StoryThanksTo", fields: [thanksToProviderId], references: [id])
-  likes              Int      @default(0)
-  createdAt          DateTime @default(now())
+  thanksToProvider   User?       @relation("StoryThanksTo", fields: [thanksToProviderId], references: [id])
+  likes              Int         @default(0)
+  status             StoryStatus @default(PUBLISHED)
+  createdAt          DateTime    @default(now())
 
   @@index([authorId])
+  @@index([status])
+}
+
+/// Trạng thái kiểm duyệt câu chuyện (admin).
+enum StoryStatus {
+  PENDING
+  PUBLISHED
+  HIDDEN
+}
+
+/// Yêu cầu xác minh tổ chức (admin duyệt).
+enum VerificationRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Đơn xin xác minh (provider/receiver gửi, admin duyệt).
+model VerificationRequest {
+  id          String                    @id @default(uuid())
+  orgName     String
+  contactName String
+  email       String
+  role        UserRole
+  type        String? // loại hình: "Nhà hàng", "Mái ấm"...
+  address     String?
+  documents   String? // mô tả giấy tờ, phân tách bằng dấu phẩy
+  status      VerificationRequestStatus @default(PENDING)
+  createdAt   DateTime                  @default(now())
+
+  @@index([status])
 }
 
 /// Thông báo trong app.
