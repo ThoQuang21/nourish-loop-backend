@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -6,6 +7,12 @@ import {
 } from '@nestjs/common';
 import { PostStatus, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import {
+  mapPostToFrontend,
+  mapRequestToFrontend,
+  normalizeFoodCategory,
+  normalizePostStatus,
+} from '../provider-contract';
 import { CreateFoodPostDto } from './dto/create-food-post.dto';
 import { QueryFoodPostDto } from './dto/query-food-post.dto';
 import { UpdateFoodPostDto } from './dto/update-food-post.dto';
@@ -17,28 +24,32 @@ export class FoodPostsService {
   async findMine(providerId: string, query: QueryFoodPostDto) {
     await this.ensureProvider(providerId);
 
+    const normalizedStatus = normalizePostStatus(query.status);
+    if (query.status && !normalizedStatus) {
+      throw new BadRequestException('Invalid status');
+    }
+
+    const normalizedCategory = normalizeFoodCategory(query.category);
+    if (query.category && !normalizedCategory) {
+      throw new BadRequestException('Invalid category');
+    }
+
     const where: Prisma.FoodPostWhereInput = {
       providerId,
-      ...(query.status ? { status: query.status } : {}),
-      ...(query.category ? { category: query.category } : {}),
+      ...(normalizedStatus ? { status: normalizedStatus } : {}),
+      ...(normalizedCategory ? { category: normalizedCategory } : {}),
       ...(query.minKg ? { weightKg: { gte: query.minKg } } : {}),
       ...(query.search
         ? { title: { contains: query.search, mode: 'insensitive' } }
         : {}),
     };
 
-    return this.prisma.foodPost.findMany({
+    const posts = await this.prisma.foodPost.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      include: {
-        _count: {
-          select: {
-            requests: true,
-            transactions: true,
-          },
-        },
-      },
     });
+
+    return posts.map(mapPostToFrontend);
   }
 
   async findOne(providerId: string, id: string) {
@@ -70,6 +81,12 @@ export class FoodPostsService {
                 profile: true,
               },
             },
+            transaction: {
+              select: {
+                id: true,
+                qrCode: true,
+              },
+            },
           },
         },
         transactions: {
@@ -82,11 +99,35 @@ export class FoodPostsService {
       throw new NotFoundException(`Provider post ${id} not found`);
     }
 
-    return post;
+    return {
+      ...mapPostToFrontend(post),
+      requests: post.requests.map(mapRequestToFrontend),
+      transactions: post.transactions.map((transaction) => ({
+        id: transaction.id,
+        qrCode: transaction.qrCode,
+        confirmedByProvider: transaction.confirmedByProvider,
+        confirmedByReceiver: transaction.confirmedByReceiver,
+        completedAt: transaction.completedAt,
+      })),
+      provider: {
+        id: post.provider.id,
+        name: post.provider.fullName,
+        org: post.provider.profile?.org ?? '',
+        trustScore: post.provider.profile?.trustScore ?? 0,
+        level: post.provider.profile?.level === 'VERIFIED' ? 'verified' : 'community',
+        avatar: post.provider.avatarUrl ?? '',
+        address: post.provider.profile?.address ?? '',
+      },
+    };
   }
 
   async create(providerId: string, dto: CreateFoodPostDto) {
     await this.ensureProvider(providerId);
+
+    const normalizedCategory = normalizeFoodCategory(dto.category);
+    if (!normalizedCategory) {
+      throw new BadRequestException('Invalid category');
+    }
 
     const expiresAt = dto.expiresInHours
       ? new Date(Date.now() + dto.expiresInHours * 3600_000)
@@ -96,10 +137,10 @@ export class FoodPostsService {
       data: {
         providerId,
         title: dto.title,
-        category: dto.category,
+        category: normalizedCategory,
         weightKg: dto.weightKg,
         description: dto.description,
-        imageUrl: dto.imageUrl,
+        imageUrl: dto.imageUrl ?? dto.image,
         address: dto.address,
         district: dto.district,
         pickupWindow: dto.pickupWindow,
@@ -116,13 +157,19 @@ export class FoodPostsService {
       },
     });
 
-    return post;
+    return mapPostToFrontend(post);
   }
 
   async update(providerId: string, id: string, dto: UpdateFoodPostDto) {
     await this.ensureProvider(providerId);
 
     const existing = await this.getOwnedPost(providerId, id);
+
+    const normalizedCategory =
+      dto.category === undefined ? undefined : normalizeFoodCategory(dto.category);
+    if (dto.category !== undefined && !normalizedCategory) {
+      throw new BadRequestException('Invalid category');
+    }
 
     if (
       existing.status === PostStatus.COMPLETED ||
@@ -136,20 +183,24 @@ export class FoodPostsService {
         ? undefined
         : new Date(Date.now() + dto.expiresInHours * 3600_000);
 
-    return this.prisma.foodPost.update({
+    const updatedPost = await this.prisma.foodPost.update({
       where: { id },
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
-        ...(dto.category !== undefined ? { category: dto.category } : {}),
+        ...(normalizedCategory !== undefined ? { category: normalizedCategory } : {}),
         ...(dto.weightKg !== undefined ? { weightKg: dto.weightKg } : {}),
         ...(dto.description !== undefined ? { description: dto.description } : {}),
-        ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
+        ...((dto.imageUrl ?? dto.image) !== undefined
+          ? { imageUrl: dto.imageUrl ?? dto.image }
+          : {}),
         ...(dto.address !== undefined ? { address: dto.address } : {}),
         ...(dto.district !== undefined ? { district: dto.district } : {}),
         ...(dto.pickupWindow !== undefined ? { pickupWindow: dto.pickupWindow } : {}),
         ...(expiresAt !== undefined ? { expiresAt } : {}),
       },
     });
+
+    return mapPostToFrontend(updatedPost);
   }
 
   async remove(providerId: string, id: string) {
@@ -166,7 +217,7 @@ export class FoodPostsService {
     }
 
     if (existing.status === PostStatus.EXPIRED) {
-      return existing;
+      return mapPostToFrontend(existing);
     }
 
     const [post] = await this.prisma.$transaction([
@@ -188,7 +239,7 @@ export class FoodPostsService {
       }),
     ]);
 
-    return post;
+    return mapPostToFrontend(post);
   }
 
   private async ensureProvider(providerId: string) {

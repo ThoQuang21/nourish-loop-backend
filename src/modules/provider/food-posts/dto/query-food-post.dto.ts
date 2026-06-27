@@ -1,6 +1,5 @@
-import { FoodCategory, PostStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class QueryFoodPostDto {
   @IsOptional()
@@ -8,12 +7,12 @@ export class QueryFoodPostDto {
   search?: string;
 
   @IsOptional()
-  @IsEnum(FoodCategory)
-  category?: FoodCategory;
+  @IsString()
+  category?: string;
 
   @IsOptional()
-  @IsEnum(PostStatus)
-  status?: PostStatus;
+  @IsString()
+  status?: string;
 
   @IsOptional()
   @Type(() => Number)

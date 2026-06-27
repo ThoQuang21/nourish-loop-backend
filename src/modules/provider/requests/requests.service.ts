@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { mapRequestToFrontend } from '../provider-contract';
 import { QueryIncomingRequestsDto } from './dto/query-incoming-requests.dto';
 import { UpdateRequestStatusDto } from './dto/update-request-status.dto';
 
@@ -16,7 +17,7 @@ export class RequestsService {
   async findIncoming(providerId: string, query: QueryIncomingRequestsDto) {
     await this.ensureProvider(providerId);
 
-    return this.prisma.request.findMany({
+    const requests = await this.prisma.request.findMany({
       where: {
         post: {
           providerId,
@@ -47,8 +48,16 @@ export class RequestsService {
             profile: true,
           },
         },
+        transaction: {
+          select: {
+            id: true,
+            qrCode: true,
+          },
+        },
       },
     });
+
+    return requests.map(mapRequestToFrontend);
   }
 
   async updateStatus(providerId: string, requestId: string, dto: UpdateRequestStatusDto) {
@@ -122,7 +131,6 @@ export class RequestsService {
         where: { id: request.id },
         data: { status: 'ACCEPTED' },
         include: {
-          post: true,
           receiver: {
             select: {
               id: true,
@@ -172,7 +180,7 @@ export class RequestsService {
       }> = [
         {
           userId: request.receiverId,
-          type: 'ACCEPTED' as const,
+          type: 'ACCEPTED',
           title: 'Request accepted',
           body: `Your request for "${request.post.title}" was accepted.`,
         },
@@ -192,8 +200,20 @@ export class RequestsService {
       });
 
       return {
-        request: acceptedRequest,
-        transaction,
+        request: mapRequestToFrontend({
+          ...acceptedRequest,
+          postId: request.post.id,
+          distanceKm: null,
+          createdAt: new Date(),
+          transaction: {
+            id: transaction.id,
+            qrCode: transaction.qrCode,
+          },
+        }),
+        transaction: {
+          id: transaction.id,
+          qrCode: transaction.qrCode,
+        },
       };
     });
   }
@@ -214,6 +234,16 @@ export class RequestsService {
       select: {
         id: true,
         status: true,
+        postId: true,
+        receiver: {
+          select: {
+            id: true,
+            fullName: true,
+            profile: true,
+          },
+        },
+        distanceKm: true,
+        createdAt: true,
       },
     });
 
@@ -229,6 +259,15 @@ export class RequestsService {
       this.prisma.request.update({
         where: { id: requestId },
         data: { status: 'REJECTED' },
+        include: {
+          receiver: {
+            select: {
+              id: true,
+              fullName: true,
+              profile: true,
+            },
+          },
+        },
       }),
       this.prisma.notification.create({
         data: {
@@ -240,7 +279,10 @@ export class RequestsService {
       }),
     ]);
 
-    return updatedRequest;
+    return mapRequestToFrontend({
+      ...updatedRequest,
+      transaction: null,
+    });
   }
 
   private async ensureProvider(providerId: string) {
