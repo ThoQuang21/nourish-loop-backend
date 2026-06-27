@@ -39,6 +39,10 @@ Server chạy ở `http://localhost:3000`, mọi route có tiền tố `/api`.
 | GET | `/api/posts` | Danh sách tin (lọc `search`, `category`, `status`, `minKg`) | — |
 | GET | `/api/posts/:id` | Chi tiết tin | — |
 | POST | `/api/posts` | Tạo tin thực phẩm | ✅ |
+| POST | `/api/requests` | Receiver đăng ký nhận (`postId`, `receiverId`) | ✅ |
+| GET | `/api/requests` | Yêu cầu của tôi (lọc `receiverId`, `status`) | ✅ |
+| GET | `/api/requests/:id` | Chi tiết yêu cầu | ✅ |
+| PATCH | `/api/requests/:id/cancel` | Huỷ yêu cầu (chỉ khi PENDING) | ✅ |
 
 > Các module khác (requests, transactions, reviews, stories, notifications) **chưa implement** — xem `docs/API.md`.
 

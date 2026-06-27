@@ -4,6 +4,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { FoodPostsModule } from './modules/food-posts/food-posts.module';
+import { ReceiverModule } from './modules/receiver/receiver.module';
 
 @Module({
   imports: [
@@ -12,7 +13,8 @@ import { FoodPostsModule } from './modules/food-posts/food-posts.module';
     HealthModule,
     AuthModule,
     FoodPostsModule,
-    // TODO (team chia việc): UsersModule, RequestsModule, TransactionsModule,
+    ReceiverModule,
+    // TODO (team chia việc): UsersModule, TransactionsModule,
     //                        ReviewsModule, StoriesModule, NotificationsModule
   ],
 })

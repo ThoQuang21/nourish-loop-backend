@@ -71,14 +71,28 @@ header `Authorization: Bearer <sessionToken>` cho `/auth/me` và `/auth/logout`.
 
 ---
 
-## Requests — `/api/requests` ⬜
+## Requests — `/api/requests`
 
-| Method | Path | Mô tả |
-|--------|------|-------|
-| POST | `/requests` | Receiver gửi yêu cầu nhận (`postId`) |
-| GET  | `/requests` | Yêu cầu của tôi (lọc theo status) |
-| GET  | `/requests/incoming` | Yêu cầu đến tin của tôi (Provider) |
-| PATCH | `/requests/:id` | Chấp nhận / từ chối / huỷ (`status`) |
+Phía **receiver** đã làm (định danh tạm qua `receiverId` trong body/query, sẽ chuyển sang token).
+
+| Method | Path | Mô tả | Trạng thái |
+|--------|------|-------|-----------|
+| POST | `/requests` | Receiver đăng ký nhận (`postId`, `receiverId`, `distanceKm?`, `message?`) | ✅ |
+| GET  | `/requests` | Yêu cầu của tôi (lọc `receiverId`, `status`) | ✅ |
+| GET  | `/requests/:id` | Chi tiết yêu cầu (kèm tin + provider) | ✅ |
+| PATCH | `/requests/:id/cancel` | Receiver huỷ (chỉ khi `PENDING`) | ✅ |
+| GET  | `/requests/incoming` | Yêu cầu đến tin của tôi (Provider) | ⬜ |
+| PATCH | `/requests/:id` | Provider chấp nhận / từ chối (`status`) | ⬜ |
+
+```jsonc
+// POST /api/requests
+{ "postId": "uuid...", "receiverId": "uuid...", "distanceKm": 2.5, "message": "Xin nhận cho bữa tối" }
+// → 201: request (status PENDING)
+// Lỗi: 404 tin không tồn tại · 409 tin không OPEN hoặc đã gửi yêu cầu rồi
+
+// GET   /api/requests?receiverId=uuid&status=PENDING        → mảng request (kèm post)
+// GET   /api/requests/:id                                   → request | 404
+// PATCH /api/requests/:id/cancel   → request (CANCELLED) | 400 nếu không PENDING
 
 ---
 

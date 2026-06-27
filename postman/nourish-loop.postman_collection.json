@@ -309,6 +309,128 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Requests (receiver)",
+      "item": [
+        {
+          "name": "GET /posts?status=OPEN (lấy postId để test)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts?status=OPEN",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts"],
+              "query": [{ "key": "status", "value": "OPEN" }]
+            },
+            "description": "Lưu id 1 tin OPEN vào openPostId để bước tạo yêu cầu dùng."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const arr = pm.response.json();",
+                  "if (Array.isArray(arr) && arr.length) pm.collectionVariables.set('openPostId', arr[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /requests (đăng ký nhận)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"postId\": \"{{openPostId}}\",\n  \"receiverId\": \"{{receiverId}}\",\n  \"distanceKm\": 2.5,\n  \"message\": \"Xin nhận cho bữa tối\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/requests", "host": ["{{baseUrl}}"], "path": ["requests"] },
+            "description": "Cần chạy trước: 'Login (Receiver)' để có receiverId, và request lấy openPostId ở trên. Nếu receiver đã từng đặt tin này → 409 (đổi sang tin OPEN khác)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tạo (201) hoặc đã đặt rồi (409)', () => pm.expect([201, 409]).to.include(pm.response.code));",
+                  "if (pm.response.code === 201) {",
+                  "  const r = pm.response.json();",
+                  "  pm.test('status = PENDING', () => pm.expect(r.status).to.eql('PENDING'));",
+                  "  pm.collectionVariables.set('requestId', r.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /requests?receiverId (yêu cầu của tôi)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/requests?receiverId={{receiverId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests"],
+              "query": [{ "key": "receiverId", "value": "{{receiverId}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('trả về mảng', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /requests/:id (chi tiết)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/requests/{{requestId}}", "host": ["{{baseUrl}}"], "path": ["requests", "{{requestId}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /requests/:id/cancel (huỷ)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/requests/{{requestId}}/cancel", "host": ["{{baseUrl}}"], "path": ["requests", "{{requestId}}", "cancel"] },
+            "description": "Chỉ huỷ được khi PENDING. Gọi lần 2 → 400."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Huỷ OK (200) hoặc không PENDING (400)', () => pm.expect([200, 400]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
@@ -316,6 +438,8 @@
     { "key": "userId", "value": "" },
     { "key": "receiverId", "value": "" },
     { "key": "providerId", "value": "" },
-    { "key": "postId", "value": "" }
+    { "key": "postId", "value": "" },
+    { "key": "openPostId", "value": "" },
+    { "key": "requestId", "value": "" }
   ]
 }
