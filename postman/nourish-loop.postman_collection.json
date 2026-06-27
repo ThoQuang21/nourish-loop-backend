@@ -1,0 +1,275 @@
+{
+  "info": {
+    "name": "Nourish-Loop API",
+    "_postman_id": "a1b2c3d4-0000-4000-8000-nourishloop01",
+    "description": "Bộ request test cho backend Nourish-Loop (Food Life).\n\nYêu cầu trước khi chạy:\n1. `npx prisma db push` rồi `npx prisma db seed`\n2. `npm run start:dev`\n3. Chọn environment \"Nourish-Loop Local\".\n\nMật khẩu mọi tài khoản seed: 123456.\nMột số request có test-script tự lưu biến (userId, providerId, postId) để dùng cho request sau.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('status = ok', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/register (tài khoản mới)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@test.vn\",\n  \"password\": \"123456\",\n  \"fullName\": \"Người Mới\",\n  \"role\": \"RECEIVER\",\n  \"org\": \"NGO Test\",\n  \"phone\": \"0903000000\",\n  \"address\": \"Quận 7, TP.HCM\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "description": "Đăng ký tài khoản mới. Dùng email đã tồn tại (seed) sẽ trả 409."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tạo thành công (201) hoặc trùng email (409)', () => pm.expect([201, 409]).to.include(pm.response.code));",
+                  "if (pm.response.code === 201) {",
+                  "  const u = pm.response.json();",
+                  "  pm.test('không trả passwordHash', () => pm.expect(u).to.not.have.property('passwordHash'));",
+                  "  pm.collectionVariables.set('userId', u.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/login (Receiver - Hoa Sen)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"lan@bepanhoasen.vn\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Đăng nhập OK (200/201)', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const u = pm.response.json();",
+                  "pm.test('đúng vai trò RECEIVER', () => pm.expect(u.role).to.eql('RECEIVER'));",
+                  "pm.test('có profile', () => pm.expect(u).to.have.property('profile'));",
+                  "pm.collectionVariables.set('receiverId', u.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/login (Provider - Lotus)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"minhanh@lotussaigon.vn\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "description": "Lưu id của provider vào biến providerId để dùng cho 'Create Post'."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Đăng nhập OK', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "pm.collectionVariables.set('providerId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/login (SAI mật khẩu - kỳ vọng 401)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"lan@bepanhoasen.vn\",\n  \"password\": \"sai-mat-khau\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Trả 401 Unauthorized', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Food Posts",
+      "item": [
+        {
+          "name": "GET /posts (tất cả OPEN)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts?status=OPEN",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts"],
+              "query": [{ "key": "status", "value": "OPEN" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('trả về mảng', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /posts (lọc category + minKg)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts?category=VEGETABLES&minKg=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts"],
+              "query": [
+                { "key": "category", "value": "VEGETABLES" },
+                { "key": "minKg", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /posts?search=bánh",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts?search=bánh",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts"],
+              "query": [{ "key": "search", "value": "bánh" }]
+            }
+          }
+        },
+        {
+          "name": "POST /posts (tạo tin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cơm hộp văn phòng còn dư\",\n  \"category\": \"PREPARED_MEAL\",\n  \"weightKg\": 6,\n  \"description\": \"30 hộp cơm trưa còn nguyên, bảo quản mát.\",\n  \"address\": \"120 Nguyễn Huệ, Quận 1\",\n  \"district\": \"Quận 1\",\n  \"pickupWindow\": \"13:00 – 14:00 hôm nay\",\n  \"expiresInHours\": 4,\n  \"providerId\": \"{{providerId}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/posts", "host": ["{{baseUrl}}"], "path": ["posts"] },
+            "description": "providerId lấy từ biến đã set bởi request 'Login (Provider - Lotus)'. Hãy chạy login provider trước."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tạo thành công (201)', () => pm.response.to.have.status(201));",
+                  "const p = pm.response.json();",
+                  "pm.test('có id', () => pm.expect(p).to.have.property('id'));",
+                  "pm.collectionVariables.set('postId', p.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /posts/:id (tin vừa tạo)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/posts/{{postId}}", "host": ["{{baseUrl}}"], "path": ["posts", "{{postId}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('có thông tin provider', () => pm.expect(pm.response.json()).to.have.property('provider'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /posts/:id (id sai - kỳ vọng 404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/khong-ton-tai",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "khong-ton-tai"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Trả 404', () => pm.response.to.have.status(404));"]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "userId", "value": "" },
+    { "key": "receiverId", "value": "" },
+    { "key": "providerId", "value": "" },
+    { "key": "postId", "value": "" }
+  ]
+}
