@@ -1,0 +1,231 @@
+// ============================================================
+// Nourish-Loop (Food Life) — Prisma schema (thiết kế SƠ BỘ)
+// Nền tảng chia sẻ thực phẩm dư thừa: Provider (cung cấp) <-> Receiver (nhận).
+//
+// Nguồn tham chiếu field: nourish-loop/src/lib/mock-data.ts
+// Đây là bản nháp để team đánh giá & chỉnh sửa — chưa cố định.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------- ENUMS ----------------------
+
+enum UserRole {
+  PROVIDER
+  RECEIVER
+  ADMIN
+}
+
+/// Mức xác thực tài khoản (badge "verified" vs "community" trên FE)
+enum VerificationLevel {
+  VERIFIED
+  COMMUNITY
+}
+
+/// Danh mục thực phẩm (khớp dropdown ở /provider/create)
+enum FoodCategory {
+  PREPARED_MEAL // Bữa ăn nấu sẵn
+  BREAD_CEREAL // Bánh mì & ngũ cốc
+  VEGETABLES // Rau củ quả
+  FRUITS // Trái cây
+  DAIRY // Sữa & sản phẩm
+  DRY_GOODS // Lương thực khô
+  OTHER // Khác
+}
+
+/// Vòng đời tin đăng thực phẩm
+enum PostStatus {
+  OPEN
+  MATCHED
+  COMPLETED
+  EXPIRED
+}
+
+/// Trạng thái yêu cầu nhận
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+enum NotificationType {
+  REQUEST
+  ACCEPTED
+  REMINDER
+  EXPIRING
+}
+
+// ---------------------- MODELS ----------------------
+
+/// Tài khoản người dùng (cả Provider lẫn Receiver dùng chung bảng này).
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  phone        String?
+  role         UserRole @default(RECEIVER)
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile Profile?
+
+  // Quan hệ nghiệp vụ
+  foodPosts        FoodPost[]     @relation("ProviderPosts")
+  requests         Request[]      @relation("ReceiverRequests")
+  providerTxns     Transaction[]  @relation("ProviderTxns")
+  receiverTxns     Transaction[]  @relation("ReceiverTxns")
+  reviewsGiven     Review[]       @relation("ReviewsGiven")
+  reviewsReceived  Review[]       @relation("ReviewsReceived")
+  stories          Story[]        @relation("StoryAuthor")
+  storiesThanked   Story[]        @relation("StoryThanksTo")
+  notifications    Notification[]
+
+  @@index([role])
+}
+
+/// Hồ sơ mở rộng (1-1 với User). Chứa thông tin tổ chức + chỉ số uy tín.
+model Profile {
+  id         String            @id @default(uuid())
+  userId     String            @unique
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org        String? // tên tổ chức (nhà hàng, bếp ăn từ thiện...)
+  address    String?
+  district   String?
+  lat        Float?
+  lng        Float?
+  level      VerificationLevel @default(COMMUNITY)
+  trustScore Float             @default(0) // 0..5
+  totalKg    Float             @default(0) // tổng kg đã chia sẻ/nhận
+  totalDeals Int               @default(0)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+}
+
+/// Tin đăng thực phẩm dư do Provider tạo.
+model FoodPost {
+  id           String       @id @default(uuid())
+  providerId   String
+  provider     User         @relation("ProviderPosts", fields: [providerId], references: [id])
+  title        String
+  category     FoodCategory
+  weightKg     Float
+  description  String?
+  imageUrl     String?
+  address      String
+  district     String?
+  lat          Float?
+  lng          Float?
+  pickupWindow String? // vd "14:30 – 16:00 hôm nay" (dạng text cho bản nháp)
+  expiresAt    DateTime? // suy ra từ expiresInHours khi tạo
+  status       PostStatus   @default(OPEN)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  requests     Request[]
+  transactions Transaction[]
+
+  @@index([status])
+  @@index([category])
+  @@index([providerId])
+}
+
+/// Yêu cầu nhận thực phẩm do Receiver gửi tới một FoodPost.
+model Request {
+  id         String        @id @default(uuid())
+  postId     String
+  post       FoodPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User          @relation("ReceiverRequests", fields: [receiverId], references: [id])
+  status     RequestStatus @default(PENDING)
+  distanceKm Float?
+  message    String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  transaction Transaction?
+
+  @@unique([postId, receiverId]) // mỗi receiver chỉ gửi 1 request/post
+  @@index([status])
+}
+
+/// Giao dịch giao/nhận đã xác nhận (qua QR). Sinh khi request được chấp nhận.
+model Transaction {
+  id                  String    @id @default(uuid())
+  postId              String
+  post                FoodPost  @relation(fields: [postId], references: [id])
+  requestId           String    @unique
+  request             Request   @relation(fields: [requestId], references: [id])
+  providerId          String
+  provider            User      @relation("ProviderTxns", fields: [providerId], references: [id])
+  receiverId          String
+  receiver            User      @relation("ReceiverTxns", fields: [receiverId], references: [id])
+  qrCode              String    @unique
+  confirmedByProvider Boolean   @default(false)
+  confirmedByReceiver Boolean   @default(false)
+  weightKg            Float?
+  co2SavedKg          Float? // tính = weightKg * hệ số carbon
+  completedAt         DateTime?
+  createdAt           DateTime  @default(now())
+
+  reviews Review[]
+
+  @@index([providerId])
+  @@index([receiverId])
+}
+
+/// Đánh giá hai chiều sau giao dịch (góp phần tính trustScore).
+model Review {
+  id            String      @id @default(uuid())
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  raterId       String
+  rater         User        @relation("ReviewsGiven", fields: [raterId], references: [id])
+  rateeId       String
+  ratee         User        @relation("ReviewsReceived", fields: [rateeId], references: [id])
+  score         Int // 1..5
+  comment       String?
+  createdAt     DateTime    @default(now())
+
+  @@index([rateeId])
+}
+
+/// Câu chuyện tác động (impact story) ở /receiver/stories.
+model Story {
+  id                 String   @id @default(uuid())
+  authorId           String
+  author             User     @relation("StoryAuthor", fields: [authorId], references: [id])
+  transactionId      String? // story có thể gắn với 1 giao dịch
+  text               String
+  imageUrl           String?
+  thanksToProviderId String? // provider được cảm ơn
+  thanksToProvider   User?    @relation("StoryThanksTo", fields: [thanksToProviderId], references: [id])
+  likes              Int      @default(0)
+  createdAt          DateTime @default(now())
+
+  @@index([authorId])
+}
+
+/// Thông báo trong app.
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+}
