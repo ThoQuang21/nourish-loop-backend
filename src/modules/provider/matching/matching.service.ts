@@ -28,6 +28,9 @@ const MATCH_WEIGHTS = {
   availability: 0.15,
 } as const;
 
+// Chỉ gửi thông báo gợi ý khi độ phù hợp >= ngưỡng (giảm nhiễu). Preview vẫn hiển thị đủ top.
+const MATCH_NOTIFY_MIN_PERCENT = 60;
+
 const receiverSelect = {
   id: true,
   fullName: true,
@@ -143,7 +146,8 @@ export class MatchingService {
       throw new NotFoundException(`Provider post ${postId} not found`);
     }
 
-    const matches = await this.findTopMatches({
+    // findTopMatches đã cap top 5; lọc thêm theo ngưỡng để chỉ báo tin đủ phù hợp.
+    const topMatches = await this.findTopMatches({
       title: post.title,
       category: post.category,
       weightKg: post.weightKg,
@@ -153,6 +157,10 @@ export class MatchingService {
       lng: post.lng,
       pickupWindow: post.pickupWindow ?? undefined,
     });
+
+    const matches = topMatches.filter(
+      (match) => match.matchPercent >= MATCH_NOTIFY_MIN_PERCENT,
+    );
 
     if (!matches.length) {
       return matches;
@@ -165,6 +173,7 @@ export class MatchingService {
         type: 'REMINDER',
         title: 'Goi y bai dang moi phu hop',
         body: `${providerLabel} vua dang "${post.title}". Do phu hop ${match.matchPercent}%, he thong da dua bai dang nay vao hang doi uu tien cua ban.`,
+        postId: post.id,
       })),
     });
 

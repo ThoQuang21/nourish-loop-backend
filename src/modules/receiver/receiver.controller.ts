@@ -22,6 +22,12 @@ export class ReceiverController {
     return this.receiverService.findRequests(query);
   }
 
+  // Đặt trước ':id' để không bị nuốt vào param.
+  @Get('history')
+  history(@Query('receiverId') receiverId?: string) {
+    return this.receiverService.history(receiverId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.receiverService.findRequest(id);
@@ -30,5 +36,11 @@ export class ReceiverController {
   @Patch(':id/cancel')
   cancel(@Param('id') id: string) {
     return this.receiverService.cancelRequest(id);
+  }
+
+  // Đóng đơn (MVP, thay cho quét QR).
+  @Patch(':id/complete')
+  complete(@Param('id') id: string, @Query('receiverId') receiverId?: string) {
+    return this.receiverService.confirmReceived(id, receiverId);
   }
 }

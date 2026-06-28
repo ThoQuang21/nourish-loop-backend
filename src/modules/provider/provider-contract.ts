@@ -176,6 +176,7 @@ export function mapNotificationToFrontend(notification: {
   type: NotificationType;
   title: string;
   body: string | null;
+  postId?: string | null;
   read: boolean;
   createdAt: Date;
 }) {
@@ -184,6 +185,7 @@ export function mapNotificationToFrontend(notification: {
     type: notificationTypeToFrontend[notification.type],
     title: notification.title,
     body: notification.body ?? '',
+    postId: notification.postId ?? null,
     time: formatRelativeTime(notification.createdAt),
     unread: !notification.read,
   };

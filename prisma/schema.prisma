@@ -263,6 +263,7 @@ model Review {
   comment       String?
   createdAt     DateTime    @default(now())
 
+  @@unique([transactionId, raterId])
   @@index([rateeId])
 }
 
@@ -322,6 +323,7 @@ model Notification {
   type      NotificationType
   title     String
   body      String?
+  postId    String? // tin liên quan (để FE mở thẳng bài đăng)
   read      Boolean          @default(false)
   createdAt DateTime         @default(now())
 

@@ -155,7 +155,13 @@ export class FoodPostsService {
       },
     });
 
-    const notifiedMatches = await this.matchingService.notifyTopMatchesForPost(post.id);
+    // Không để lỗi matching/notify làm hỏng việc tạo tin (fire-and-forget có bắt lỗi).
+    let notifiedMatches: unknown[] = [];
+    try {
+      notifiedMatches = await this.matchingService.notifyTopMatchesForPost(post.id);
+    } catch {
+      notifiedMatches = [];
+    }
 
     await this.prisma.notification.create({
       data: {
