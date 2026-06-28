@@ -631,6 +631,108 @@ async function main(): Promise<void> {
     ],
   });
 
+  // ============ LÀM PHONG PHÚ DỮ LIỆU CHO MINH ANH (LOTUS) — DEMO ============
+
+  // 1) Tin đa dạng quanh Thủ Đức (kèm vài yêu cầu PENDING để dashboard có việc).
+  const lotusPosts = [
+    { title: 'Cơm hộp trưa văn phòng', cat: FoodCategory.PREPARED_MEAL, kg: 14, status: PostStatus.OPEN, addr: 'Lê Văn Việt, Thủ Đức', lat: 10.8462, lng: 106.779, pickup: '11:30 – 13:00 hôm nay', exp: 4, pendingFrom: charity },
+    { title: 'Súp & món hầm còn ấm', cat: FoodCategory.PREPARED_MEAL, kg: 9, status: PostStatus.OPEN, addr: 'Kha Vạn Cân, Thủ Đức', lat: 10.859, lng: 106.77, pickup: '17:00 – 18:30 hôm nay', exp: 5, pendingFrom: shelter },
+    { title: 'Sữa & sữa chua cận hạn', cat: FoodCategory.DAIRY, kg: 11, status: PostStatus.MATCHED, addr: 'Võ Văn Ngân, Thủ Đức', lat: 10.8505, lng: 106.765, pickup: 'Đã có người nhận', exp: 6, pendingFrom: null },
+    { title: 'Bánh ngọt tồn cuối ca', cat: FoodCategory.BREAD_CEREAL, kg: 6, status: PostStatus.EXPIRED, addr: 'Hoàng Diệu 2, Thủ Đức', lat: 10.885, lng: 106.79, pickup: 'Đã hết hạn', exp: -2, pendingFrom: null },
+  ];
+  for (const e of lotusPosts) {
+    const post = await prisma.foodPost.create({
+      data: {
+        providerId: lotus.id,
+        title: e.title,
+        category: e.cat,
+        weightKg: e.kg,
+        description: 'Thực phẩm còn tốt từ Lotus Saigon Hotel, bảo quản đúng cách.',
+        imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836',
+        address: e.addr,
+        district: 'Thủ Đức',
+        lat: e.lat,
+        lng: e.lng,
+        pickupWindow: e.pickup,
+        expiresAt: e.exp >= 0 ? hoursFromNow(e.exp) : daysAgo(-e.exp),
+        status: e.status,
+      },
+    });
+    if (e.pendingFrom) {
+      await prisma.request.create({
+        data: {
+          postId: post.id,
+          receiverId: e.pendingFrom.id,
+          status: RequestStatus.PENDING,
+          distanceKm: 3.2,
+          message: 'Bếp cần khoảng 40 suất cho bữa tối, xin nhận ạ.',
+        },
+      });
+    }
+  }
+
+  // 2) Giao dịch HOÀN TẤT rải 6 ngày gần nhất (cho ESG/impact + đánh giá + lịch sử receiver).
+  const lotusDeals = [
+    { receiver: charity, title: 'Buffet tối khách sạn (suất ăn)', kg: 22, days: 1, score: 5, comment: 'Suất ăn nóng, đóng gói kỹ. Cảm ơn Lotus!' },
+    { receiver: shelter, title: 'Cơm trưa suất văn phòng', kg: 16, days: 2, score: 5, comment: 'Các bé ở mái ấm ăn rất ngon.' },
+    { receiver: charity, title: 'Bánh mì & ngũ cốc buổi sáng', kg: 8, days: 3, score: 4, comment: 'Bánh còn mới, giao đúng giờ.' },
+    { receiver: shelter, title: 'Salad & rau trộn', kg: 12, days: 4, score: 5, comment: 'Rau tươi, rất tốt cho bữa ăn.' },
+    { receiver: charity, title: 'Trái cây tráng miệng', kg: 10, days: 5, score: 5, comment: 'Trái cây ngon, cảm ơn nhiều.' },
+    { receiver: shelter, title: 'Súp & món chính buổi tối', kg: 18, days: 6, score: 4, comment: 'Phù hợp bữa tối, sẽ nhận tiếp.' },
+  ];
+  for (const d of lotusDeals) {
+    const completedAt = daysAgo(d.days);
+    const post = await prisma.foodPost.create({
+      data: {
+        providerId: lotus.id,
+        title: d.title,
+        category: FoodCategory.PREPARED_MEAL,
+        weightKg: d.kg,
+        description: 'Đã trao tặng thành công.',
+        imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836',
+        address: 'Lotus Saigon Hotel, Thủ Đức',
+        district: 'Thủ Đức',
+        lat: 10.8772,
+        lng: 106.8035,
+        pickupWindow: 'Đã hoàn tất',
+        expiresAt: completedAt,
+        status: PostStatus.COMPLETED,
+      },
+    });
+    const request = await prisma.request.create({
+      data: {
+        postId: post.id,
+        receiverId: d.receiver.id,
+        status: RequestStatus.COMPLETED,
+        distanceKm: 2 + d.days,
+        message: 'Xin nhận cho bữa ăn cộng đồng.',
+      },
+    });
+    const txn = await prisma.transaction.create({
+      data: {
+        postId: post.id,
+        requestId: request.id,
+        providerId: lotus.id,
+        receiverId: d.receiver.id,
+        qrCode: `NL-LOTUS-D${d.days}-${d.kg}`,
+        confirmedByProvider: true,
+        confirmedByReceiver: true,
+        weightKg: d.kg,
+        co2SavedKg: d.kg * CARBON_FACTOR,
+        completedAt,
+      },
+    });
+    await prisma.review.create({
+      data: {
+        transactionId: txn.id,
+        raterId: d.receiver.id,
+        rateeId: lotus.id,
+        score: d.score,
+        comment: d.comment,
+      },
+    });
+  }
+
   // ----------------------------- TỔNG KẾT -----------------------------
   const counts = {
     users: await prisma.user.count(),
