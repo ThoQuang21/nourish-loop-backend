@@ -95,6 +95,7 @@ model User {
   phone        String?
   role         UserRole @default(RECEIVER)
   avatarUrl    String?
+  zaloUserId   String?  @unique // liên kết Zalo OA (prototype)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

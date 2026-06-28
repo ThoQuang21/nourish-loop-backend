@@ -12,6 +12,7 @@ import {
   Weekday,
 } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { SmsService } from '../../sms/sms.service';
 import { normalizeFoodCategory } from '../provider-contract';
 import { PreviewProviderMatchDto } from './dto/preview-provider-match.dto';
 import {
@@ -91,7 +92,10 @@ type ParsedPickupWindow = {
 
 @Injectable()
 export class MatchingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sms: SmsService,
+  ) {}
 
   async preview(providerId: string, dto: PreviewProviderMatchDto) {
     await this.ensureProvider(providerId);
@@ -176,6 +180,17 @@ export class MatchingService {
         postId: post.id,
       })),
     });
+
+    // Gửi SMS cho receiver có số điện thoại (dry-run nếu chưa cấu hình). Fire-and-forget.
+    const recipients = await this.prisma.user.findMany({
+      where: { id: { in: matches.map((m) => m.receiverId) }, phone: { not: null } },
+      select: { phone: true },
+    });
+    for (const r of recipients) {
+      void this.sms
+        .notifyMatch(r.phone as string, post.title, providerLabel, post.id)
+        .catch(() => undefined);
+    }
 
     return matches;
   }

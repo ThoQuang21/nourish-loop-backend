@@ -7,7 +7,9 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { ProviderModule } from './modules/provider/provider.module';
 import { ReceiverModule } from './modules/receiver/receiver.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { SmsModule } from './modules/sms/sms.module';
 import { StoriesModule } from './modules/stories/stories.module';
+import { ZaloModule } from './modules/zalo/zalo.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -22,6 +24,8 @@ import { PrismaModule } from './prisma/prisma.module';
     StoriesModule,
     NotificationsModule,
     ReviewsModule,
+    ZaloModule,
+    SmsModule,
   ],
 })
 export class AppModule {}
